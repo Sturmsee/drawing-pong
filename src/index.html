@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <script src="scripts/canvas.js" defer></script>
+    <script src="scripts/index.js" defer></script>
     <title>Drawing Pong</title>
 </head>
 <body>
@@ -12,21 +12,16 @@
         <navbar>
             <ul>
                 <li><a href="index.html">Home</a></li>
-                <li><a href="about.html">About</a></li>
-                <li><a href="contact.html">Contact</a></li>
+                <li><a href="../README.md" target="_blank">About</a></li>
             </ul>
         </navbar>
     </header>
-    <section class="canvas-section">
-        <h2>Welcome to Drawing Pong</h2>
-        <p>This is a simple pong game made with Canvas</p>
-        <canvas id="pongCanvas" class="" width="800" height="400" style="border:1px solid black;"></canvas>
-    </section>
-    <!--<aside class="player-menu">
-        <h3>Player Menu</h3>
+    <section>
+        <h2>Pick your color</h2>
         <ul>
-            <li><a href="start-game.html">Start Game</a></li>
+            <li><button class="color-button" data-color="red">Red</button></li>
+            <li><button class="color-button" data-color="blue">Blue</button></li>
         </ul>
-    </aside>-->
+    </section>
 </body>
 </html>
