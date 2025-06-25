@@ -7,28 +7,43 @@ var players = [];
 wss.on('connection', ws => {
     console.log('New client connected');
 
+    //Error handling for incoming messages    
     try {
         const data = JSON.parse(message)
-        console.log(`Received data: ${data}`);
+        console.log(`Received data: ${data.id}, ${data.playerPosY}`);
     } catch (error) {
         console.error('Error parsing message:', error);
     }
 
-    ws.on('message', data => {
-        //console.log(`Received message: ${data}`);
+    ws.on('message', message => {
+        //console.log(`Received message: ${message}`);
 
-        var message = JSON.parse(data);
 
-        // Broadcast the updated player positions to all connected clients
-        wss.clients.forEach(client => {
-            if (client.readyState === WebSocket.OPEN) {
-                client.send(JSON.stringify({
-                    id: message.id,
-                    playerPosY: message.playerPosY
-                }));
-            }
+
+        // Parse the incoming message
+        var data = JSON.parse(message);
+
+        // Store player data
+        players.push({
+            id: data.id,
+            playerPosY: data.playerPosY
         });
+
+        setInterval(() => {
+            // Broadcast the updated player positions to all connected clients
+            wss.clients.forEach(client => {
+                if (client.readyState === WebSocket.OPEN) {
+                    client.send(JSON.stringify({
+                        id: data.id,
+                        playerPosY: data.playerPosY
+                    }));
+                }
+            });
+        }, 1000 / 24);
+
     });
+
+
 
 
 

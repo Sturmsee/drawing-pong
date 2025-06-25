@@ -3,14 +3,20 @@
 let canvas;
 let ctx;
 
+var posX = [];
 var posY = 0;
-var Enemy_posY = 0;
 
-var playerId = 0;
+var mousePosition = 0;
+
+var playerId = ""; // Default player ID, can be changed based on localStorage or other logic
 
 // Set up event listeners for mouse movement and clicks
 document.addEventListener("mousemove", setPositionY);
 
+window.onload = function () {
+    playerId = sessionStorage.getItem('playerColor');
+    console.log(`Player ID set to: ${playerId}`);
+}
 
 
 //##########################################
@@ -28,6 +34,7 @@ function initCanvas() {
         throw new Error("Failed to get canvas context");
     }
     resizeCanvas();
+    posX = [75, canvas.width - 75]; // Set initial positions for the rectangles
     // Set up the canvas to resize with the window
     window.addEventListener("resize", resizeCanvas);
 }
@@ -42,15 +49,15 @@ function resizeCanvas() {
 
 
 //#########################################
-//############### PLAYER 1 ################
+//############### PLAYERS  ################
 //#########################################
 
 // Function to set the position of the mouse
 function setPositionY(event) {
-    return posY = event.clientY;
+    return mousePosition = event.clientY;
 }
 
-class RedRect {
+class Rect {
     constructor(_posX, _color) {
         this.posX = _posX;
         this.posY = posY;
@@ -70,51 +77,12 @@ class RedRect {
     }
 
 
-
     onCollision() {
-        // Check for collision with the rectangle
+        // Check for collision between the rectangle and the game ball
         if (gameBall.x + gameBall.radius > this.posX &&
             gameBall.x - gameBall.radius < this.posX + 25 &&
             gameBall.y + gameBall.radius > posY &&
             gameBall.y - gameBall.radius < posY + 80) {
-
-            gameBall.onHit(); // Call the onHit method of the Ball class
-        }
-    }
-}
-
-
-
-//##########################################
-//############### Player 2 #################
-//##########################################
-
-class BlueRect {
-    constructor(_posX, _color) {
-        this.posX = _posX;
-        this.posY = posY;
-        this.width = 25;
-        this.height = 80;
-        this.color = _color
-    }
-
-    drawRectangle() {
-        if (!ctx) return;
-
-        ctx.beginPath();
-        ctx.fillStyle = this.color;
-        ctx.fillRect(this.posX, Enemy_posY, 25, 80);
-        ctx.closePath();
-        ctx.fill();
-    }
-
-
-    onCollision() {
-        // Check for collision with the rectangle
-        if (gameBall.x + gameBall.radius > this.posX &&
-            gameBall.x - gameBall.radius < this.posX + 25 &&
-            gameBall.y + gameBall.radius > Enemy_posY &&
-            gameBall.y - gameBall.radius < Enemy_posY + 80) {
 
             gameBall.onHit(); // Call the onHit method of the Ball class
         }
@@ -174,78 +142,84 @@ class Ball {
 
 
 //##########################################
+//############### WEBSOCKET ################
+//##########################################
+
+const ws = new WebSocket('ws://localhost:8080'); // Connect to the WebSocket server
+
+ws.addEventListener('open', e => {
+    console.log('WebSocket connection established');
+    ws.send(JSON.stringify({
+        id: playerId,
+        playerPosY: mousePosition // Send the initial position of the player
+    }));
+
+    ws.addEventListener('message', event => {
+        //console.log(event.data);
+        var message = JSON.parse(event.data);
+        updateRectPositions(message);
+    });
+});
+
+
+
+function onUpdatePositions() {
+    // Send the current positions of the player
+    var data = {
+        playerPosY: mousePosition, // Get the current mouse position
+        id: playerId
+    };
+    
+    ws.send(JSON.stringify(data));
+}
+
+
+//Update the positions of the rectangles based on Player IDs
+function updateRectPositions(_data) {
+    //_data = JSON.parse(_message.data);
+    if (_data.id === "red") {
+        player1.posY = _data.playerPosY; // Update player position
+        player1 = posX[0];
+        player1.color = _data.id; // Update player color
+    }
+    if (_data.id === "blue") {
+        player2.posY = _data.playerPosY; // Update enemy position
+        player2 = posX[1];
+        player2.color = _data.id; // Update enemy color
+    }
+
+}
+
+
+
+//##########################################
 //############### GAME LOOP ################
 //##########################################
+
+initCanvas();
+gameBall = new Ball(100, 100, 20, 4, 3);
+player1 = new Rect(posX[0], "red");
+player2 = new Rect(posX[1], "blue");
+gameLoop(); // Start the game loop
+
+
 
 function gameLoop() {
     if (!ctx) return;
 
     ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
 
-    setInterval(onUpdatePositions, 1000 / 60); // Update positions at 60 FPS
-
+    if (ws.readyState == WebSocket.OPEN) {
+        setInterval(onUpdatePositions(), 30000); // Update the positions of the rectangles based on mouse position
+    }
+    
     gameBall.draw();
     gameBall.update();
+
     player1.drawRectangle(); // Draw the rectangle
     player1.onCollision(); // Check for collision with the rectangle
     player2.drawRectangle(); // Draw the second rectangle
     player2.onCollision(); // Check for collision with the second rectangle
 
     requestAnimationFrame(gameLoop);
-}
-
-initCanvas();
-gameBall = new Ball(100, 100, 20, 4, 3);
-player1 = new RedRect(75, "red");
-player2 = new BlueRect(canvas.width - 75, "blue");
-gameLoop(); // Start the game loop
-
-
-
-
-//##########################################
-//############### WEBSOCKET ################
-//##########################################
-
-const ws = new WebSocket('ws://localhost:8080');
-
-ws.addEventListener('open', e => {
-    console.log('WebSocket connection established');
-
-    ws.addEventListener('message', data => {
-        //console.log( data );
-        const message = JSON.parse(data);
-        if (message.id === 0) {
-            playerId = 1;
-            //message.id.push(playerId);
-        }
-        else if (message.id.length > 0) {
-            playerId = 2;
-            //message.id.push(playerId);
-        }
-
-        updateRectPositions(data);
-    });
-});
-
-
-function onUpdatePositions() {
-    // Send the current positions of the player and enemy rectangles to the server
-    const data = {
-        playerPosY: posY,
-        id: playerId
-    };
-    ws.send(JSON.stringify(data));
-}
-
-//Update the positions of the rectangles based on Player IDs
-function updateRectPositions(_data) {
-    _data = JSON.parse(_data);
-    if (_data.id === 1) {
-        posY = _data.playerPosY; // Update player position
-    }
-    else if (_data.id === 2) {
-        Enemy_posY = _data.playerPosY; // Update enemy position
-    }
-
 }
