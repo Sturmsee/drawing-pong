@@ -48,7 +48,7 @@ Aside from this the project was created solely by me.
 
 
 #################################
-###      Troubleshooting      ###
+###     Errors & Mistakes     ###
 #################################
 
 While originally the rectangles were meant to move to your mouseCourser -at least the height- there seems to be an error with the assignment of said parameters. The Y-coordinates of the courser get captured and logged but the rectangles still don't seem to react.
