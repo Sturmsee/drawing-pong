@@ -200,7 +200,7 @@ initCanvas();
 gameBall = new Ball(100, 100, 20, 4, 3);
 player1 = new Rect(posX[0], "red");
 player2 = new Rect(posX[1], "blue");
-gameLoop(); // Start the game loop
+setInterval(gameLoop(), 1000/60); // Start the game loop
 
 
 
@@ -210,7 +210,7 @@ function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
 
     if (ws.readyState == WebSocket.OPEN) {
-        setInterval(onUpdatePositions(), 30000); // Update the positions of the rectangles based on mouse position
+        setInterval(onUpdatePositions(), 2000); // Update the positions of the rectangles based on mouse position
     }
     
     gameBall.draw();
