@@ -1,4 +1,3 @@
-var color
 
 window.onload = function() {
     const playerColorButtons = document.querySelectorAll('.color-button');
@@ -10,20 +9,7 @@ window.onload = function() {
 }
 
 function submitPlayerColor(event) {
-    color = event.target.dataset.color;
-    /*
-    if (event.target.innerHTML === 'Red') {
-        color = 'red';
-    }
-    else if (event.target.innerHTML === 'Blue') {
-        color = 'blue';
-    }
-    */
-    
-    //console.log(`Player color set to: ${color}`);
-
-    //const ws = new WebSocket('ws://localhost:8080');
-    
+    let color = event.target.dataset.color;
     sessionStorage.setItem('playerColor', color);
     window.location.href = 'game.html';
 }

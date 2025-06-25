@@ -4,23 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="scripts/index.js" defer></script>
+    <link rel="stylesheet" href="styles/styles.css">
     <title>Drawing Pong</title>
 </head>
 <body>
     <header>
-        <h1>Drawing Pong</h1>
-        <navbar>
-            <ul>
-                <li><a href="index.html">Home</a></li>
-                <li><a href="../README.md" target="_blank">About</a></li>
-            </ul>
+        <h1>"Drawn" Pong</h1>
+        <navbar class="navbar">
+            <a href="../README.md" target="_blank">About</a>
         </navbar>
     </header>
-    <section>
+    <section class="color-selection">
         <h2>Pick your color</h2>
-        <ul>
-            <li><button class="color-button" data-color="red">Red</button></li>
-            <li><button class="color-button" data-color="blue">Blue</button></li>
+        <ul class="selector-list">
+            <li class="selector-item"><button class="color-button red" data-color="red">Red</button></li>
+            <li class="selector-item"><button class="color-button blue" data-color="blue">Blue</button></li>
         </ul>
     </section>
 </body>

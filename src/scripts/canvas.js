@@ -210,7 +210,7 @@ function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
 
     if (ws.readyState == WebSocket.OPEN) {
-        onUpdatePositions(); // Update the positions of the rectangles based on mouse position
+        setInterval(onUpdatePositions(), 30000); // Update the positions of the rectangles based on mouse position
     }
     
     gameBall.draw();
