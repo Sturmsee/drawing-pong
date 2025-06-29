@@ -1,21 +1,38 @@
+let roomName = 'pong';
 
+let serverURL = 'wss://nosch.uber.space/web-rooms/';
+let socket = new WebSocket(serverURL);
+
+let clientId = null;
+let clientCount = 0;
 
 let canvas;
 let ctx;
 
 var posX = [];
-var posY = 0;
+
 
 var mousePosition = 0;
 
-var playerId = ""; // Default player ID, can be changed based on localStorage or other logic
+var pointDisplay;
+
+var roomID = "";
 
 // Set up event listeners for mouse movement and clicks
 document.addEventListener("mousemove", setPositionY);
 
 window.onload = function () {
-    playerId = sessionStorage.getItem('playerColor');
-    console.log(`Player ID set to: ${playerId}`);
+    roomID = sessionStorage.getItem('roomID');
+
+    pointDisplay = document.querySelector('.points');
+    pointDisplay.innerText = "0/0";
+
+    initCanvas();
+    gameBall = new Ball(100, 100, 20, 4, 3);
+    player1 = new Rect(posX[0], "red");
+    player2 = new Rect(posX[1], "blue");
+    setInterval(gameLoop(), 1000 / 60); // Start the game loop
+    setInterval(sendPositions, 1000); // Send positions every frame
 }
 
 
@@ -34,16 +51,16 @@ function initCanvas() {
         throw new Error("Failed to get canvas context");
     }
     resizeCanvas();
-    posX = [75, canvas.width - 75]; // Set initial positions for the rectangles
-    // Set up the canvas to resize with the window
-    window.addEventListener("resize", resizeCanvas);
+    posX = [75, canvas.width - 75];     // Set initial positions for the rectangles
+    
+    window.addEventListener("resize", resizeCanvas);    // Set up the canvas to resize with the window
 }
 
 // Resize the canvas to fit the window
 function resizeCanvas() {
     if (!canvas) return;
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    canvas.width = window.innerWidth/1.5;
+    canvas.height = window.innerHeight/1.5;
 }
 
 
@@ -60,18 +77,16 @@ function setPositionY(event) {
 class Rect {
     constructor(_posX, _color) {
         this.posX = _posX;
-        this.posY = posY;
+        this.posY = 0;
         this.width = 25;
         this.height = 80;
         this.color = _color
     }
 
-    drawRectangle() {
-        if (!ctx) return;
-
+    drawRect() {
         ctx.beginPath();
         ctx.fillStyle = this.color;
-        ctx.fillRect(this.posX, posY, 25, 80);
+        ctx.fillRect(this.posX, this.posY, 25, 80);
         ctx.closePath();
         ctx.fill();
     }
@@ -81,8 +96,8 @@ class Rect {
         // Check for collision between the rectangle and the game ball
         if (gameBall.x + gameBall.radius > this.posX &&
             gameBall.x - gameBall.radius < this.posX + 25 &&
-            gameBall.y + gameBall.radius > posY &&
-            gameBall.y - gameBall.radius < posY + 80) {
+            gameBall.y + gameBall.radius > this.posY &&
+            gameBall.y - gameBall.radius < this.posY + 80) {
 
             gameBall.onHit(); // Call the onHit method of the Ball class
         }
@@ -133,7 +148,7 @@ class Ball {
         const speedFactor = this.speedFactor;
         this.dx *= -speedFactor; // Reverse direction on hit
         this.dy *= speedFactor;
-
+        sendPositions(); // Show collision
     }
 
 
@@ -145,62 +160,54 @@ class Ball {
 //############### WEBSOCKET ################
 //##########################################
 
-const ws = new WebSocket('ws://localhost:8080'); // Connect to the WebSocket server
-
-ws.addEventListener('open', e => {
-    console.log('WebSocket connection established');
-    ws.send(JSON.stringify({
-        id: playerId,
-        playerPosY: mousePosition // Send the initial position of the player
-    }));
-
-    ws.addEventListener('message', event => {
-        //console.log(event.data);
-        var message = JSON.parse(event.data);
-        updateRectPositions(message);
-    });
+// WebSocket-Setup
+socket.addEventListener('open', () => {
+    socket.send(JSON.stringify(['*enter-room*', roomName]));
+    socket.send(JSON.stringify(['*subscribe-client-count*']));
+    socket.send(JSON.stringify(['*subscribe-client-enter-exit*']));
+    socket.send(JSON.stringify(['*init-data*', 'positions', [0, 0, 100, 100]])); //Player1.posY, Player2.posY, Ball.x, Ball.y
+    socket.send(JSON.stringify(['*subscribe-data*', 'positions']));
+    setInterval(() => socket.send(''), 30000); // Keep alive
+    console.log("WebSocket verbunden");
 });
 
+socket.addEventListener('message', (event) => {
+    if (!event.data) return;
 
+    const data = JSON.parse(event.data);
+    const cmd = data[0];
+    console.log("Empfangen:", data);
 
-function onUpdatePositions() {
-    // Send the current positions of the player
-    var data = {
-        playerPosY: mousePosition, // Get the current mouse position
-        id: playerId
-    };
-    
-    ws.send(JSON.stringify(data));
-}
+    switch (cmd) {
+        case '*client-id*':
+            clientId = data[1];
+            break;
 
+        case '*client-count*':
+            clientCount = data[1];
+            break;
 
-//Update the positions of the rectangles based on Player IDs
-function updateRectPositions(_data) {
-    //_data = JSON.parse(_message.data);
-    if (_data.id === "red") {
-        player1.posY = _data.playerPosY; // Update player position
-        player1 = posX[0];
-        player1.color = _data.id; // Update player color
+        case 'positions':
+            updatePositions(data[1]);
+            break;
+
+            
+        case '*error*':
+            console.warn('Serverfehler:', data[1]);
+            break;
+
+        default:
+            console.warn('Unbekannter Befehl:', cmd);
+            break;
     }
-    if (_data.id === "blue") {
-        player2.posY = _data.playerPosY; // Update enemy position
-        player2 = posX[1];
-        player2.color = _data.id; // Update enemy color
-    }
+});
 
-}
 
 
 
 //##########################################
 //############### GAME LOOP ################
 //##########################################
-
-initCanvas();
-gameBall = new Ball(100, 100, 20, 4, 3);
-player1 = new Rect(posX[0], "red");
-player2 = new Rect(posX[1], "blue");
-setInterval(gameLoop(), 1000/60); // Start the game loop
 
 
 
@@ -209,17 +216,53 @@ function gameLoop() {
 
     ctx.clearRect(0, 0, canvas.width, canvas.height); // Clear the canvas
 
-    if (ws.readyState == WebSocket.OPEN) {
-        setInterval(onUpdatePositions(), 2000); // Update the positions of the rectangles based on mouse position
-    }
-    
+
     gameBall.draw();
     gameBall.update();
 
-    player1.drawRectangle(); // Draw the rectangle
+
+    if (clientId === 0) {
+        player1.posY = mousePosition;
+    }
+    if (clientId === 1) {
+        player2.posY = mousePosition;
+    }
+
+    player1.drawRect(); // Draw the rectangle
     player1.onCollision(); // Check for collision with the rectangle
-    player2.drawRectangle(); // Draw the second rectangle
+    
+    player2.drawRect(); // Draw the second rectangle
     player2.onCollision(); // Check for collision with the second rectangle
+    
 
     requestAnimationFrame(gameLoop);
+}
+
+
+//UPDATE POSITIONS
+// This function updates the positions of the players and the ball based on the received message
+
+function updatePositions(message) {
+    const positions = message;
+    console.log("Received positions:", positions);
+    
+    player1.posY = positions[0];
+    player2.posY = positions[1];
+    
+    gameBall.x = positions[2];
+    gameBall.y = positions[3];   
+    
+
+}
+
+
+//SENDS POSITIONS TO SERVER
+// This function sends the current positions of the players and the ball to the server
+
+function sendPositions() {
+    
+    const _positions = [player1.posY, player2.posY, gameBall.x, gameBall.y];
+    const _message = JSON.stringify(['*set-data*', 'positions', positions = _positions]);
+    socket.send(_message);
+    
 }
