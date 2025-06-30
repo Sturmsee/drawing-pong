@@ -22,7 +22,7 @@ h1 {
     background-color: #33CCCC;
     text-align: center;
     margin: 1rem auto;
-    width: 30%;
+    width: 20%;
     border-radius: 15px;
 }
 
@@ -41,6 +41,25 @@ a:hover {
     border-radius: 15px;
 }
 
+.play-button {
+    background-color: #66FFFF;
+    color: black;
+    border: none;
+    padding: 1.5rem;
+    font-size: 2rem;
+    display: flex;
+    margin-top: 10rem;
+    width: 40%;
+    justify-content: center;
+    box-shadow: slategray 2px 2px 5px;
+}
+
+.play-button:hover {
+    box-sizing: content-box;
+    border-radius: 5px;
+    background-color: #0099CC;
+    box-shadow: black 2px 2px 5px;
+}
 
 .color-selection {
     align-items: center;
